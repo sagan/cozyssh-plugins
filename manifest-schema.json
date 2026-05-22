@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": [
+    "version",
+    "plugins"
+  ],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "The version of the configuration file."
+    },
+    "plugins": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "id",
+          "type"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "send_string",
+              "terminal_function",
+              "misc",
+              "open_terminal",
+              "run_script"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "payload": {
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "autorun": {
+            "type": "integer"
+          },
+          "order": {
+            "type": "integer"
+          },
+          "group": {
+            "type": "string"
+          },
+          "shortcut": {
+            "type": "string"
+          },
+          "author": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "oneOf": [
+          {
+            "required": [
+              "payload"
+            ]
+          },
+          {
+            "required": [
+              "filename"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

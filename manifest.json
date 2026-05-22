@@ -1,0 +1,32 @@
+{
+  "$schema": "https://raw.githubusercontent.com/sagan/cozyssh-plugins/refs/heads/master/manifest-schema.json",
+  "version": "20260523",
+  "plugins": [
+    {
+      "name": "PluginManager",
+      "id": "cs-plugin-manager",
+      "type": "run_script",
+      "autorun": 0,
+      "order": 0,
+      "group": "Default",
+      "shortcut": "",
+      "author": "sagan",
+      "filename": "PluginManager.tsx",
+      "description": "Manage plugins",
+      "version": "1.0.0"
+    },
+    {
+      "name": "VariableManager",
+      "id": "cs-variable-manager",
+      "type": "run_script",
+      "autorun": 0,
+      "order": 0,
+      "group": "Default",
+      "shortcut": "",
+      "author": "sagan",
+      "filename": "VariableManager.tsx",
+      "description": "Manage persistent variables",
+      "version": "1.0.0"
+    }
+  ]
+}
