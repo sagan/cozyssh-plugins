@@ -13,7 +13,7 @@ import React, { useState, useEffect } from 'react';
 interface PluginManifestItem {
   name: string;
   id: string;
-  type: string;
+  type: "send_string" | "terminal_function" | "misc" | "open_terminal" | "run_script";
   description?: string;
   payload?: string;
   filename?: string;
@@ -461,7 +461,7 @@ const styles = {
     fontSize: '0.9rem',
     margin: 0,
   }
-};
+} as const;
 
 const name = "Plugin Manager";
 

@@ -27,7 +27,7 @@ const SettingsApplet = () => {
     csNotify(`Variable "${newKey}" saved`);
   };
 
-  const handleDelete = async (key) => {
+  const handleDelete = async (key: string) => {
     if (!confirm(`Delete ${key}?`)) {
       return;
     }
@@ -37,7 +37,7 @@ const SettingsApplet = () => {
   };
 
   // Populate the form fields with the selected variable's data
-  const handleEdit = (key, value) => {
+  const handleEdit = (key: string, value: string) => {
     setNewKey(key);
     setNewValue(value);
   };
