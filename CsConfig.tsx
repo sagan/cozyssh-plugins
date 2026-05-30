@@ -273,6 +273,21 @@ const StyleEditor = ({ cssKey, classKey, scope }: StyleEditorProps) => {
     setSaving(key);
     try {
       await csSetVar(key, value || undefined);
+      const latestValue = csGetVar(key) || "";
+      switch (key) {
+        case "css":
+          document.getElementById("cozy_css")!.textContent = latestValue;
+          break;
+        case "local_css":
+          document.getElementById("cozy_local_css")!.textContent = latestValue;
+          break;
+        case "class":
+        case "local_class":
+          document.documentElement.classList.add(...latestValue.trim().split(/\s+/).filter(Boolean));
+          break;
+        default:
+          break;
+      }
       loadValues();
     } catch (e: any) {
       csNotify(`Error saving "${key}": ${e.message ?? e}`, "error");
@@ -290,8 +305,7 @@ const StyleEditor = ({ cssKey, classKey, scope }: StyleEditorProps) => {
         <span>
           {scope === "Global"
             ? "Global styles are synced to the server and applied across all browsers."
-            : "Local styles are stored in this browser only and not synced."}{" "}
-          Changes apply on the <strong>next page reload</strong>.
+            : "Local styles are stored in this browser only and not synced."}
         </span>
       </div>
 

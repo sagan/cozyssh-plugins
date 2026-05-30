@@ -159,7 +159,7 @@ const PluginManagerApplet = () => {
               CozySSH Plugins
             </a>
           </h3>
-          <p style={styles.subtitle}>Browse, install, and manage official CozySSH plugins</p>
+          <p style={styles.subtitle}>Browse, install, and manage CozySSH plugins</p>
         </div>
         <button
           onClick={loadManifest}
