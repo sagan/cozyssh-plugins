@@ -2,7 +2,7 @@
  * @file Config - Advanced settings manager for CozySSH.
  * @module Config
  * @author sagan
- * @license MIT
+ * @license BSD-3-Clause
  * @version 1.0.0
  * @since 2026-05-30
  * @id cs-config

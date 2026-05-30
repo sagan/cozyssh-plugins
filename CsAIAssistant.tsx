@@ -93,7 +93,7 @@ const AIAssistant = () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
-        },
+        }
       );
 
       if (!response.ok) {
@@ -154,7 +154,7 @@ const AIAssistant = () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ contents: [{ parts: [{ text: "ping" }] }] }),
-        },
+        }
       );
       const data = await response.json();
       if (data.error) throw new Error(data.error.message);

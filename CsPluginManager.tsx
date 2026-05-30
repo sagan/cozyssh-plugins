@@ -2,7 +2,7 @@
  * @file Plugin Manager.
  * @module PluginManager
  * @author sagan
- * @license MIT
+ * @license BSD-3-Clause
  * @version 1.0.0
  * @since 2026-05-22
  * @id cs-plugin-manager
