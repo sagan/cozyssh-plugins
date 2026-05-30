@@ -6,27 +6,23 @@
  * @version 1.0.0
  * @since 2026-05-22
  * @id cs-plugin-manager
+ * @group _Sys
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
+import { ButtonData } from "./csapi";
 
-interface PluginManifestItem {
-  name: string;
-  id: string;
-  type: "send_string" | "terminal_function" | "misc" | "open_terminal" | "run_script";
+interface PluginManifestItem extends ButtonData {
   description?: string;
-  payload?: string;
   filename?: string;
-  autorun?: number;
-  order?: number;
-  group?: string;
-  shortcut?: string;
   author?: string;
   version?: string;
 }
 
-const MANIFEST_URL = 'https://raw.githubusercontent.com/sagan/cozyssh-plugins/refs/heads/master/manifest.json';
-const RAW_REPO_ROOT = 'https://raw.githubusercontent.com/sagan/cozyssh-plugins/refs/heads/master/';
+const PLUGIN_NAME = "Plugin Manager";
+const PLUGIN_ID = "cs-plugin-manager";
+const RAW_REPO_ROOT = "https://raw.githubusercontent.com/sagan/cozyssh-plugins/refs/heads/master/";
+const MANIFEST_URL = RAW_REPO_ROOT + "manifest.json";
 
 const PluginManagerApplet = () => {
   const [plugins, setPlugins] = useState<PluginManifestItem[]>([]);
@@ -34,7 +30,7 @@ const PluginManagerApplet = () => {
   const [loading, setLoading] = useState(true);
   const [actioningId, setActioningId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Sync state with CozySSH global buttons list
   const refreshInstalled = () => {
@@ -43,7 +39,7 @@ const PluginManagerApplet = () => {
       const installed = new Set(buttons.map((b: any) => b.id));
       setInstalledIds(installed);
     } catch (e) {
-      console.error('Failed to get installed buttons:', e);
+      console.error("Failed to get installed buttons:", e);
     }
   };
 
@@ -60,10 +56,10 @@ const PluginManagerApplet = () => {
       if (data && Array.isArray(data.plugins)) {
         setPlugins(data.plugins);
       } else {
-        throw new Error('Invalid manifest structure');
+        throw new Error("Invalid manifest structure");
       }
     } catch (e: any) {
-      console.error('Failed to load plugin manifest:', e);
+      console.error("Failed to load plugin manifest:", e);
       setError(`Failed to load plugin manifest: ${e.message || e}`);
     } finally {
       setLoading(false);
@@ -82,7 +78,7 @@ const PluginManagerApplet = () => {
     return (
       plugin.name.toLowerCase().includes(query) ||
       plugin.id.toLowerCase().includes(query) ||
-      (plugin.description || '').toLowerCase().includes(query)
+      (plugin.description || "").toLowerCase().includes(query)
     );
   });
 
@@ -90,7 +86,7 @@ const PluginManagerApplet = () => {
   const handleInstall = async (plugin: PluginManifestItem) => {
     setActioningId(plugin.id);
     try {
-      let payloadContent = plugin.payload || '';
+      let payloadContent = plugin.payload || "";
 
       // If payload is not inlined, fetch from repository via filename
       if (!payloadContent && plugin.filename) {
@@ -102,22 +98,24 @@ const PluginManagerApplet = () => {
         payloadContent = await res.text();
       }
 
+      delete __CS_MODULECACHE__[plugin.id];
+      const existing = csGetAll().buttons.find((b: any) => b.id === plugin.id);
       await csUpdateButton({
         id: plugin.id,
-        name: plugin.name,
         type: plugin.type,
         payload: payloadContent,
-        group: plugin.group || 'Default',
-        autorun: plugin.autorun || 0,
-        order: plugin.order || 0,
-        shortcut: plugin.shortcut || '',
+        name: existing ? existing.name : plugin.name,
+        group: existing ? existing.group : plugin.group || "Default",
+        autorun: existing ? existing.autorun : plugin.autorun || 0,
+        order: existing ? existing.order : plugin.order || 0,
+        shortcut: existing ? existing.shortcut : plugin.shortcut || "",
       });
 
-      csNotify(`Plugin "${plugin.name}" installed successfully!`, 'success');
+      csNotify(`Plugin "${plugin.name}" installed successfully!`, "success");
       refreshInstalled();
     } catch (e: any) {
       console.error(`Failed to install plugin ${plugin.name}:`, e);
-      csNotify(`Failed to install plugin: ${e.message || e}`, 'error');
+      csNotify(`Failed to install plugin: ${e.message || e}`, "error");
     } finally {
       setActioningId(null);
     }
@@ -125,17 +123,17 @@ const PluginManagerApplet = () => {
 
   // Uninstall a plugin
   const handleUninstall = async (plugin: PluginManifestItem) => {
-    if (!confirm(`Are you sure you want to uninstall "${plugin.name}"?`)) {
+    if (!(await csConfirm(`Are you sure you want to uninstall "${plugin.name}"?`))) {
       return;
     }
     setActioningId(plugin.id);
     try {
       await csDeleteButton(plugin.id);
-      csNotify(`Plugin "${plugin.name}" uninstalled successfully!`, 'success');
+      csNotify(`Plugin "${plugin.name}" uninstalled successfully!`, "success");
       refreshInstalled();
     } catch (e: any) {
       console.error(`Failed to uninstall plugin ${plugin.name}:`, e);
-      csNotify(`Failed to uninstall plugin: ${e.message || e}`, 'error');
+      csNotify(`Failed to uninstall plugin: ${e.message || e}`, "error");
     } finally {
       setActioningId(null);
     }
@@ -156,14 +154,18 @@ const PluginManagerApplet = () => {
 
       <div style={styles.header}>
         <div>
-          <h3 style={styles.title}><a target="_blank" rel="noopener noreferrer" href="https://github.com/sagan/cozyssh-plugins">Plugin Manager</a></h3>
+          <h3 style={styles.title}>
+            <a target="_blank" rel="noopener noreferrer" href="https://github.com/sagan/cozyssh-plugins">
+              CozySSH Plugins
+            </a>
+          </h3>
           <p style={styles.subtitle}>Browse, install, and manage official CozySSH plugins</p>
         </div>
         <button
           onClick={loadManifest}
           style={{
             ...styles.btnReinstall,
-            padding: '8px 12px',
+            padding: "8px 12px",
           }}
           disabled={loading}
         >
@@ -183,11 +185,7 @@ const PluginManagerApplet = () => {
         />
       </div>
 
-      {error && (
-        <div style={styles.alert}>
-          {error}
-        </div>
-      )}
+      {error && <div style={styles.alert}>{error}</div>}
 
       {loading ? (
         <div style={styles.loadingContainer}>
@@ -197,8 +195,8 @@ const PluginManagerApplet = () => {
       ) : (
         <div style={styles.pluginList}>
           {filteredPlugins.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#71717a' }}>
-              {plugins.length === 0 ? 'No plugins found in manifest.' : 'No plugins match your search query.'}
+            <div style={{ textAlign: "center", padding: "40px", color: "#71717a" }}>
+              {plugins.length === 0 ? "No plugins found in manifest." : "No plugins match your search query."}
             </div>
           ) : (
             filteredPlugins.map((plugin) => {
@@ -209,9 +207,17 @@ const PluginManagerApplet = () => {
                 <div key={plugin.id} style={styles.pluginCard}>
                   <div style={styles.pluginHeader}>
                     <div>
-                      <h4 style={styles.pluginTitle}>{plugin.name}</h4>
+                      <h4 style={styles.pluginTitle}>
+                        {plugin.filename ? (
+                          <a href={`${RAW_REPO_ROOT}${plugin.filename}`} target="_blank" rel="noopener noreferrer">
+                            {plugin.name}
+                          </a>
+                        ) : (
+                          plugin.name
+                        )}
+                      </h4>
                       <div style={styles.author}>
-                        By {plugin.author || 'sagan'} {plugin.version && `• v${plugin.version}`}
+                        By {plugin.author || "sagan"} {plugin.version && `• v${plugin.version}`}
                       </div>
                     </div>
                     <div>
@@ -223,13 +229,11 @@ const PluginManagerApplet = () => {
                     </div>
                   </div>
 
-                  {plugin.description && (
-                    <p style={styles.description}>{plugin.description}</p>
-                  )}
+                  {plugin.description && <p style={styles.description}>{plugin.description}</p>}
 
                   <div style={styles.footer}>
                     <div style={styles.meta}>
-                      Type: <code style={{ color: '#4f46e5', fontWeight: 600 }}>{plugin.type}</code>
+                      Type: <code style={{ color: "#4f46e5", fontWeight: 600 }}>{plugin.type}</code>
                     </div>
                     <div style={styles.actions}>
                       {isInstalled ? (
@@ -252,8 +256,22 @@ const PluginManagerApplet = () => {
                             }}
                             disabled={isActioning}
                           >
-                            {isActioning ? 'Loading...' : 'Re-install'}
+                            {isActioning ? "Loading..." : "Re-install"}
                           </button>
+                          {plugin.id !== PLUGIN_ID && (
+                            <button
+                              style={styles.btnOpen}
+                              onClick={() => {
+                                const btn = csGetAll().buttons.find((btn) => btn.id === plugin.id);
+                                if (btn) {
+                                  csCloseApplet(PLUGIN_NAME);
+                                  csRunScript(btn);
+                                }
+                              }}
+                            >
+                              Run
+                            </button>
+                          )}
                         </>
                       ) : (
                         <button
@@ -264,7 +282,7 @@ const PluginManagerApplet = () => {
                           }}
                           disabled={isActioning}
                         >
-                          {isActioning ? 'Installing...' : 'Install'}
+                          {isActioning ? "Installing..." : "Install"}
                         </button>
                       )}
                     </div>
@@ -281,199 +299,206 @@ const PluginManagerApplet = () => {
 
 const styles = {
   container: {
-    padding: '24px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '20px',
-    background: '#ffffff',
-    color: '#18181b',
+    padding: "24px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "20px",
+    background: "#ffffff",
+    color: "#18181b",
     fontFamily: '"Inter", "Outfit", -apple-system, sans-serif',
-    height: '100%',
-    minHeight: '450px',
-    boxSizing: 'border-box' as 'border-box',
-    overflowY: 'auto' as 'auto',
+    height: "100%",
+    boxSizing: "border-box" as "border-box",
+    overflowY: "auto" as "auto",
   },
   header: {
-    borderBottom: '1px solid #e4e4e7',
-    paddingBottom: '16px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    borderBottom: "1px solid #e4e4e7",
+    paddingBottom: "16px",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   title: {
     margin: 0,
-    fontSize: '1.4rem',
+    fontSize: "1.4rem",
     fontWeight: 700,
-    background: 'linear-gradient(90deg, #4f46e5 0%, #6366f1 100%)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
+    background: "linear-gradient(90deg, #4f46e5 0%, #6366f1 100%)",
+    WebkitBackgroundClip: "text",
+    WebkitTextFillColor: "transparent",
   },
   subtitle: {
-    margin: '4px 0 0 0',
-    fontSize: '0.85rem',
-    color: '#71717a',
+    margin: "4px 0 0 0",
+    fontSize: "0.85rem",
+    color: "#71717a",
   },
   searchContainer: {
-    width: '100%',
+    width: "100%",
   },
   searchInput: {
-    width: '100%',
-    padding: '10px 16px',
-    borderRadius: '8px',
-    border: '1px solid #e4e4e7',
-    background: '#f4f4f5',
-    color: '#18181b',
-    fontSize: '0.9rem',
-    outline: 'none',
-    boxSizing: 'border-box' as 'border-box',
-    transition: 'all 0.2s ease',
+    width: "100%",
+    padding: "10px 16px",
+    borderRadius: "8px",
+    border: "1px solid #e4e4e7",
+    background: "#f4f4f5",
+    color: "#18181b",
+    fontSize: "0.9rem",
+    outline: "none",
+    boxSizing: "border-box" as "border-box",
+    transition: "all 0.2s ease",
   },
   loadingContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '60px 0',
-    color: '#71717a',
-    gap: '12px',
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "60px 0",
+    color: "#71717a",
+    gap: "12px",
   },
   spinner: {
-    width: '40px',
-    height: '40px',
-    border: '3px solid #f4f4f5',
-    borderTop: '3px solid #4f46e5',
-    borderRadius: '50%',
-    animation: 'cs-plugin-spin 1s linear infinite',
+    width: "40px",
+    height: "40px",
+    border: "3px solid #f4f4f5",
+    borderTop: "3px solid #4f46e5",
+    borderRadius: "50%",
+    animation: "cs-plugin-spin 1s linear infinite",
   },
   pluginList: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px',
+    display: "flex",
+    flexDirection: "column",
+    gap: "16px",
   },
   pluginCard: {
-    background: '#ffffff',
-    border: '1px solid #e4e4e7',
-    borderRadius: '12px',
-    padding: '18px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '12px',
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
-    transition: 'all 0.2s ease',
+    background: "#ffffff",
+    border: "1px solid #e4e4e7",
+    borderRadius: "12px",
+    padding: "18px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
+    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+    transition: "all 0.2s ease",
   },
   pluginHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
   },
   pluginTitle: {
-    fontSize: '1.1rem',
+    fontSize: "1.1rem",
     fontWeight: 600,
     margin: 0,
-    color: '#18181b',
+    color: "#18181b",
   },
   author: {
-    fontSize: '0.75rem',
-    color: '#71717a',
-    marginTop: '2px',
+    fontSize: "0.75rem",
+    color: "#71717a",
+    marginTop: "2px",
   },
   badgeInstalled: {
-    background: 'rgba(16, 185, 129, 0.1)',
-    color: '#059669',
-    border: '1px solid rgba(16, 185, 129, 0.2)',
-    padding: '2px 8px',
-    borderRadius: '9999px',
-    fontSize: '0.75rem',
+    background: "rgba(16, 185, 129, 0.1)",
+    color: "#059669",
+    border: "1px solid rgba(16, 185, 129, 0.2)",
+    padding: "2px 8px",
+    borderRadius: "9999px",
+    fontSize: "0.75rem",
     fontWeight: 600,
   },
   badgeNotInstalled: {
-    background: 'rgba(113, 113, 122, 0.08)',
-    color: '#52525b',
-    border: '1px solid rgba(113, 113, 122, 0.15)',
-    padding: '2px 8px',
-    borderRadius: '9999px',
-    fontSize: '0.75rem',
+    background: "rgba(113, 113, 122, 0.08)",
+    color: "#52525b",
+    border: "1px solid rgba(113, 113, 122, 0.15)",
+    padding: "2px 8px",
+    borderRadius: "9999px",
+    fontSize: "0.75rem",
     fontWeight: 600,
   },
   description: {
-    fontSize: '0.9rem',
-    color: '#3f3f46',
+    fontSize: "0.9rem",
+    color: "#3f3f46",
     lineHeight: 1.5,
     margin: 0,
   },
   footer: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: '4px',
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: "4px",
   },
   meta: {
-    fontSize: '0.75rem',
-    color: '#71717a',
+    fontSize: "0.75rem",
+    color: "#71717a",
   },
   actions: {
-    display: 'flex',
-    gap: '10px',
+    display: "flex",
+    gap: "10px",
   },
   btnInstall: {
-    background: '#4f46e5',
-    color: '#ffffff',
-    border: 'none',
-    padding: '6px 16px',
-    borderRadius: '6px',
-    cursor: 'pointer',
+    background: "#4f46e5",
+    color: "#ffffff",
+    border: "none",
+    padding: "6px 16px",
+    borderRadius: "6px",
+    cursor: "pointer",
     fontWeight: 600,
-    fontSize: '0.85rem',
-    transition: 'background 0.2s ease',
+    fontSize: "0.85rem",
+    transition: "background 0.2s ease",
   },
   btnUninstall: {
-    background: 'transparent',
-    color: '#dc2626',
-    border: '1px solid rgba(220, 38, 38, 0.3)',
-    padding: '6px 14px',
-    borderRadius: '6px',
-    cursor: 'pointer',
+    background: "transparent",
+    color: "#dc2626",
+    border: "1px solid rgba(220, 38, 38, 0.3)",
+    padding: "6px 14px",
+    borderRadius: "6px",
+    cursor: "pointer",
     fontWeight: 600,
-    fontSize: '0.85rem',
-    transition: 'all 0.2s ease',
+    fontSize: "0.85rem",
+    transition: "all 0.2s ease",
   },
   btnReinstall: {
-    background: 'transparent',
-    color: '#27272a',
-    border: '1px solid rgba(39, 39, 42, 0.2)',
-    padding: '6px 14px',
-    borderRadius: '6px',
-    cursor: 'pointer',
+    background: "transparent",
+    color: "#27272a",
+    border: "1px solid rgba(39, 39, 42, 0.2)",
+    padding: "6px 14px",
+    borderRadius: "6px",
+    cursor: "pointer",
     fontWeight: 600,
-    fontSize: '0.85rem',
-    transition: 'all 0.2s ease',
+    fontSize: "0.85rem",
+    transition: "all 0.2s ease",
+  },
+  btnOpen: {
+    background: "#4f46e5ff",
+    color: "#ffffff",
+    border: "none",
+    padding: "6px 16px",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontWeight: 600,
+    fontSize: "0.85rem",
+    transition: "all 0.2s ease",
   },
   btnDisabled: {
     opacity: 0.5,
-    cursor: 'not-allowed',
+    cursor: "not-allowed",
   },
   alert: {
-    background: 'rgba(239, 68, 68, 0.08)',
-    color: '#b91c1c',
-    border: '1px solid rgba(239, 68, 68, 0.15)',
-    padding: '12px 16px',
-    borderRadius: '8px',
-    fontSize: '0.9rem',
+    background: "rgba(239, 68, 68, 0.08)",
+    color: "#b91c1c",
+    border: "1px solid rgba(239, 68, 68, 0.15)",
+    padding: "12px 16px",
+    borderRadius: "8px",
+    fontSize: "0.9rem",
     margin: 0,
-  }
+  },
 } as const;
 
-const name = "Plugin Manager";
-
-// Applet launcher entrypoint
-export function run() {
-  if (csGetApplet(name)) {
-    csCloseApplet(name);
-  } else {
-    csOpenApplet(name, PluginManagerApplet, { position: "dialog", width: 700, height: 600 });
-  }
-}
-
-// Controls to cache module and prevent terminal focus loss on launch
-export const cache = true;
-export const noFocus = true;
+export default {
+  noFocus: true,
+  cache: true,
+  run() {
+    if (csGetApplet(PLUGIN_NAME)) {
+      csCloseApplet(PLUGIN_NAME);
+    } else {
+      csOpenApplet(PLUGIN_NAME, PluginManagerApplet, { position: "dialog", width: 700, height: 600 });
+    }
+  },
+} as CsScript;

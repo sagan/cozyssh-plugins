@@ -1,31 +1,70 @@
 {
   "$schema": "https://raw.githubusercontent.com/sagan/cozyssh-plugins/refs/heads/master/manifest-schema.json",
-  "version": "20260523",
+  "version": "20260530",
   "plugins": [
     {
-      "name": "PluginManager",
       "id": "cs-plugin-manager",
+      "name": "PluginManager",
       "type": "run_script",
       "autorun": 0,
       "order": 0,
-      "group": "Default",
+      "group": "_Sys",
       "shortcut": "",
       "author": "sagan",
-      "filename": "PluginManager.tsx",
+      "filename": "CsPluginManager.tsx",
       "description": "Manage plugins",
       "version": "1.0.0"
     },
     {
-      "name": "VariableManager",
-      "id": "cs-variable-manager",
+      "id": "cs-config",
+      "name": "Config",
       "type": "run_script",
       "autorun": 0,
       "order": 0,
-      "group": "Default",
+      "group": "_Sys",
       "shortcut": "",
       "author": "sagan",
-      "filename": "VariableManager.tsx",
+      "filename": "CsConfig.tsx",
+      "description": "Manage advanced CozySSH settings and custom styles",
+      "version": "1.0.0"
+    },
+    {
+      "id": "cs-variable-manager",
+      "name": "VariableManager",
+      "type": "run_script",
+      "autorun": 0,
+      "order": 0,
+      "group": "_Sys",
+      "shortcut": "",
+      "author": "sagan",
+      "filename": "CsVariableManager.tsx",
       "description": "Manage persistent variables",
+      "version": "1.0.0"
+    },
+    {
+      "id": "cs-cmd-history",
+      "name": "CmdHistory",
+      "type": "run_script",
+      "autorun": 0,
+      "order": 0,
+      "group": "_Sys",
+      "shortcut": "",
+      "author": "sagan",
+      "filename": "CsCmdHistory.tsx",
+      "description": "View recent sent terminal commands",
+      "version": "1.0.0"
+    },
+    {
+      "id": "cs-ai-assistant",
+      "name": "AI",
+      "type": "run_script",
+      "autorun": 0,
+      "order": 0,
+      "group": "_Sys",
+      "shortcut": "",
+      "author": "sagan",
+      "filename": "CsAIAssistant.tsx",
+      "description": "Chat with AI about your terminal",
       "version": "1.0.0"
     }
   ]

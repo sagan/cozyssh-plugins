@@ -1,10 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "required": [
-    "version",
-    "plugins"
-  ],
+  "required": ["version", "plugins"],
   "properties": {
     "version": {
       "type": "string",
@@ -14,11 +11,7 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": [
-          "name",
-          "id",
-          "type"
-        ],
+        "required": ["name", "id", "type"],
         "properties": {
           "name": {
             "type": "string"
@@ -28,13 +21,7 @@
           },
           "type": {
             "type": "string",
-            "enum": [
-              "send_string",
-              "terminal_function",
-              "misc",
-              "open_terminal",
-              "run_script"
-            ]
+            "enum": ["send_string", "terminal_function", "misc", "open_terminal", "run_script"]
           },
           "description": {
             "type": "string"
@@ -66,14 +53,10 @@
         },
         "oneOf": [
           {
-            "required": [
-              "payload"
-            ]
+            "required": ["payload"]
           },
           {
-            "required": [
-              "filename"
-            ]
+            "required": ["filename"]
           }
         ]
       }
