@@ -1,0 +1,12 @@
+{
+  "printWidth": 120,
+  "trailingComma": "all",
+  "overrides": [
+    {
+      "files": [".eslintrc", "*.json"],
+      "options": {
+        "trailingComma": "none"
+      }
+    }
+  ]
+}
