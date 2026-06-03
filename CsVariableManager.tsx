@@ -43,9 +43,9 @@ const SettingsApplet = () => {
   };
 
   useEffect(() => {
-    window.addEventListener("storage", refresh);
+    window.addEventListener("cs:vars", refresh);
     return () => {
-      window.removeEventListener("storage", refresh);
+      window.removeEventListener("cs:vars", refresh);
     };
   }, []);
 

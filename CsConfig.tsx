@@ -16,18 +16,32 @@ import React, { useState, useEffect, useCallback } from "react";
 const LOCAL_PREFIX = "local_";
 
 // all variables default (if unset) to false
-const BOOL_VARS = [
-  { key: "cs_noautoload", description: "Disable automatic opening of terminals on load." },
-  { key: "cs_noautorun", description: "Disable automatic execution of autorun scripts." },
-  { key: "cs_nowakelock", description: "Disable the screen wake lock (prevents screen staying on)." },
-  { key: "cs_nomodtextarea", description: "Disable the modified textarea input mode." },
-  { key: "cs_noimage", description: "Disable inline image rendering in the terminal." },
-  { key: "cs_noweblinks", description: "Disable clickable web links in the terminal." },
-  { key: "cs_nowebgl", description: "Disable WebGL renderer (falls back to canvas)." },
+const BOOL_VARS: BoolVarRowProps[] = [
+  {
+    varKey: "cs_remap_ctrl_l",
+    description:
+      `Ignore "Ctrl+L" keystroke in terminal (so the browser handles it) and ` +
+      `remap "ctrl+shift+l" & "ctrl+alt+l" to terminal clear screen action instead.`,
+  },
+  { varKey: "cs_noautoload", description: "Disable automatic opening of terminals on load." },
+  { varKey: "cs_noautorun", description: "Disable automatic execution of autorun scripts." },
+  { varKey: "cs_nowakelock", description: "Disable the screen wake lock (prevents screen staying on)." },
+  { varKey: "cs_nomodtextarea", description: "Disable the modified textarea input mode." },
+  { varKey: "cs_noimage", description: "Disable inline image rendering in the terminal." },
+  { varKey: "cs_noweblinks", description: "Disable clickable web links in the terminal." },
+  { varKey: "cs_nowebgl", description: "Disable WebGL renderer (falls back to canvas)." },
 ];
 
-const INT_VARS = [
-  { key: "cs_scroll_lines", description: "Terminal scroll speed in lines.", defaultValue: 3, min: 1, max: 100 },
+const NUM_VARS: NumVarRowProps[] = [
+  {
+    varKey: "cs_terminal_font_size",
+    description: "Terminal font size",
+    defaultValue: 15,
+    min: 1,
+    max: 100,
+    isFloat: true,
+  },
+  { varKey: "cs_scroll_lines", description: "Terminal scroll speed in lines.", defaultValue: 3, min: 1, max: 100 },
 ];
 
 type Scope = "global" | "local";
@@ -86,8 +100,8 @@ const BoolVarRow = ({ varKey, description }: { varKey: string; description: stri
   // Refresh when localStorage changes (cross-tab)
   useEffect(() => {
     const handler = () => setValues(readBothScopes(varKey));
-    window.addEventListener("storage", handler);
-    return () => window.removeEventListener("storage", handler);
+    window.addEventListener("cs:vars", handler);
+    return () => window.removeEventListener("cs:vars", handler);
   }, [varKey]);
 
   const currentRaw = scope === "local" ? values.local : values.global;
@@ -136,19 +150,21 @@ const BoolVarRow = ({ varKey, description }: { varKey: string; description: stri
 
 // ── ScrollLinesRow ────────────────────────────────────────────────────────────
 
-const IntVarRow = ({
-  varKey,
-  description,
-  defaultValue,
-  min,
-  max,
-}: {
+type BoolVarRowProps = {
+  varKey: string;
+  description: string;
+};
+
+type NumVarRowProps = {
   varKey: string;
   description: string;
   defaultValue: number;
   min: number;
   max: number;
-}) => {
+  isFloat?: boolean;
+};
+
+const NumVarRow = ({ varKey, description, defaultValue, min, max, isFloat }: NumVarRowProps) => {
   const [scope, setScope] = useState<Scope>(() => initialScope(varKey));
   const [values, setValues] = useState(() => readBothScopes(varKey));
   // Local draft for the number input (so user can type freely before blur)
@@ -167,13 +183,13 @@ const IntVarRow = ({
       const fresh = readBothScopes(varKey);
       setValues(fresh);
     };
-    window.addEventListener("storage", handler);
-    return () => window.removeEventListener("storage", handler);
+    window.addEventListener("cs:vars", handler);
+    return () => window.removeEventListener("cs:vars", handler);
   }, []);
 
   const handleBlur = async () => {
-    const parsed = parseInt(draft);
-    const clamped = isNaN(parsed) ? 3 : Math.max(1, Math.min(50, parsed));
+    const parsed = isFloat ? parseFloat(draft) : parseInt(draft);
+    const clamped = isNaN(parsed) ? defaultValue : Math.max(min, Math.min(max, parsed));
     const valStr = String(clamped);
     setDraft(valStr);
     try {
@@ -232,11 +248,18 @@ const IntVarRow = ({
 
 const SettingsTab = () => (
   <div style={s.tabContent}>
-    {INT_VARS.map(({ key, description, defaultValue, min, max }) => (
-      <IntVarRow key={key} varKey={key} description={description} defaultValue={defaultValue} min={min} max={max} />
+    {NUM_VARS.map(({ varKey, description, defaultValue, min, max }) => (
+      <NumVarRow
+        key={varKey}
+        varKey={varKey}
+        description={description}
+        defaultValue={defaultValue}
+        min={min}
+        max={max}
+      />
     ))}
-    {BOOL_VARS.map(({ key, description }) => (
-      <BoolVarRow key={key} varKey={key} description={description} />
+    {BOOL_VARS.map(({ varKey, description }) => (
+      <BoolVarRow key={varKey} varKey={varKey} description={description} />
     ))}
   </div>
 );
@@ -265,8 +288,8 @@ const StyleEditor = ({ cssKey, classKey, scope }: StyleEditorProps) => {
 
   useEffect(() => {
     loadValues();
-    window.addEventListener("storage", loadValues);
-    return () => window.removeEventListener("storage", loadValues);
+    window.addEventListener("cs:vars", loadValues);
+    return () => window.removeEventListener("cs:vars", loadValues);
   }, [loadValues]);
 
   const save = async (key: string, value: string) => {
