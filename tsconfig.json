@@ -4,12 +4,7 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "strict": true,
-
-    // CRITICAL: Tells VS Code not to emit .js files.
-    // Your runtime handles the compilation, so VS Code only does the type-checking.
     "noEmit": true,
-
-    // If your scripts use JSX/React syntax
     "jsx": "react-jsx"
   },
   "include": ["**/*.ts", "**/*.tsx", "csapi.d.ts"]
