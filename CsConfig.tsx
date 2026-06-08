@@ -51,7 +51,7 @@ type Tab = "settings" | "global-styles" | "local-styles";
 
 /** Read both scopes of a var from the live store. */
 function readBothScopes(key: string): { global: string | undefined; local: string | undefined } {
-  const all = csGetVar() as Record<string, string | undefined>;
+  const all = csGetVar();
   return {
     global: all[key],
     local: all[LOCAL_PREFIX + key],
@@ -60,7 +60,7 @@ function readBothScopes(key: string): { global: string | undefined; local: strin
 
 /** Initial scope: "local" if local version exists, else "global". */
 function initialScope(key: string): Scope {
-  const all = csGetVar() as Record<string, string | undefined>;
+  const all = csGetVar();
   return LOCAL_PREFIX + key in all ? "local" : "global";
 }
 
@@ -118,7 +118,7 @@ const BoolVarRow = ({ varKey, description }: { varKey: string; description: stri
       await persistVar(varKey, scope, newVal);
       setValues(readBothScopes(varKey));
     } catch (e: any) {
-      csNotify(`Error saving "${varKey}": ${e.message ?? e}`, "error");
+      csNotify(`Error saving "${varKey}": ${e}`, "error");
     }
   };
 
@@ -196,7 +196,7 @@ const NumVarRow = ({ varKey, description, defaultValue, min, max, isFloat }: Num
       await persistVar(varKey, scope, valStr);
       setValues(readBothScopes(varKey));
     } catch (e: any) {
-      csNotify(`Error saving "${varKey}": ${e.message ?? e}`, "error");
+      csNotify(`Error saving "${varKey}": ${e}`, "error");
     }
   };
 
@@ -206,7 +206,7 @@ const NumVarRow = ({ varKey, description, defaultValue, min, max, isFloat }: Num
       setValues(readBothScopes(varKey));
       setDraft(defaultValue.toString());
     } catch (e: any) {
-      csNotify(`Error resetting "${varKey}": ${e.message ?? e}`, "error");
+      csNotify(`Error resetting "${varKey}": ${e}`, "error");
     }
   };
 
@@ -273,7 +273,7 @@ interface StyleEditorProps {
 }
 
 const StyleEditor = ({ cssKey, classKey, scope }: StyleEditorProps) => {
-  const all = () => csGetVar() as Record<string, string | undefined>;
+  const all = () => csGetVar();
 
   const [cssVal, setCssVal] = useState(() => all()[cssKey] ?? "");
   const [classVal, setClassVal] = useState(() => all()[classKey] ?? "");
@@ -313,7 +313,7 @@ const StyleEditor = ({ cssKey, classKey, scope }: StyleEditorProps) => {
       }
       loadValues();
     } catch (e: any) {
-      csNotify(`Error saving "${key}": ${e.message ?? e}`, "error");
+      csNotify(`Error saving "${key}": ${e}`, "error");
     } finally {
       setSaving(null);
     }
