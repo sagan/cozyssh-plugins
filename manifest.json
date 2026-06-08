@@ -66,6 +66,19 @@
       "filename": "CsAIAssistant.tsx",
       "description": "Chat with AI about your terminal",
       "version": "1.0.0"
+    },
+    {
+      "id": "cs-server-monitor",
+      "name": "ServerMonitor",
+      "type": "run_script",
+      "autorun": 0,
+      "order": 0,
+      "group": "_Sys",
+      "shortcut": "",
+      "author": "sagan",
+      "filename": "CsServerMonitor.tsx",
+      "description": "Monitor Linux server CPU, memory, disk and network in a sidebar applet",
+      "version": "1.0.0"
     }
   ]
 }
