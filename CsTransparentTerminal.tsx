@@ -21,6 +21,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 const VAR_DISABLED = "transparent_terminal_disabled";
+const VAR_LOCAL_DISABLED = "local_transparent_terminal_disabled";
 const VAR_BG_IMAGE = "transparent_terminal_background_image";
 const VAR_BG_COLOR = "transparent_terminal_bg_color";
 const VAR_ACSS = "acss";
@@ -52,24 +53,17 @@ const PRESET_IMAGES: string[] = [
 
 const APPLET_NAME = "Transparent Terminal Settings";
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
-
-function getVars(): Record<string, string | undefined> {
-  return csGetVar() as Record<string, string | undefined>;
-}
-
 function isEnabled(): boolean {
-  const v = getVars()[VAR_DISABLED];
-  return !v || v === "0";
+  return csGetVar(VAR_DISABLED) !== "1" && csGetVar(VAR_LOCAL_DISABLED) !== "1";
 }
 
 function getBackgroundImage(): string {
-  const v = getVars()[VAR_BG_IMAGE];
+  const v = csGetVar(VAR_BG_IMAGE);
   return v && v.trim() ? v.trim() : PRESET_IMAGES[0];
 }
 
 function getBgColor(): string {
-  const v = getVars()[VAR_BG_COLOR];
+  const v = csGetVar(VAR_BG_COLOR);
   return v && v.trim() ? v.trim() : DEFAULT_BG_COLOR;
 }
 
@@ -197,8 +191,9 @@ async function applyEffect() {
 // ── Settings Dialog Component ──────────────────────────────────────────────────
 
 const SettingsDialog = () => {
-  const [disabled, setDisabled] = useState(() => !isEnabled());
-  const [bgImage, setBgImage] = useState(() => getVars()[VAR_BG_IMAGE] ?? "");
+  const [disabled, setDisabled] = useState(() => csGetVar(VAR_DISABLED) === "1");
+  const [localDisabled, setLocalDisabled] = useState(() => csGetVar(VAR_LOCAL_DISABLED) === "1");
+  const [bgImage, setBgImage] = useState(() => csGetVar(VAR_BG_IMAGE) || "");
   const [bgColor, setBgColor] = useState(() => getBgColor());
   const [customUrl, setCustomUrl] = useState("");
   const [customColor, setCustomColor] = useState("");
@@ -208,7 +203,7 @@ const SettingsDialog = () => {
   // Reload state when vars change
   const reloadState = useCallback(() => {
     setDisabled(!isEnabled());
-    setBgImage(getVars()[VAR_BG_IMAGE] ?? "");
+    setBgImage(csGetVar(VAR_BG_IMAGE) ?? "");
     setBgColor(getBgColor());
   }, []);
 
@@ -218,10 +213,11 @@ const SettingsDialog = () => {
   }, [reloadState]);
 
   // The effective URL currently previewed
-  const effectiveUrl = bgImage.trim() || PRESET_IMAGES[0];
+  const effectiveUrl = bgImage || PRESET_IMAGES[0];
 
   const persist = async (updates: {
     disabled?: boolean;
+    localDisabled?: boolean;
     imageUrl?: string | undefined;
     bgColor?: string | undefined;
   }) => {
@@ -230,6 +226,9 @@ const SettingsDialog = () => {
       const varUpdates: Record<string, string | undefined> = {};
       if (updates.disabled !== undefined) {
         varUpdates[VAR_DISABLED] = updates.disabled ? "1" : undefined;
+      }
+      if (updates.localDisabled !== undefined) {
+        varUpdates[VAR_LOCAL_DISABLED] = updates.localDisabled ? "1" : undefined;
       }
       if ("imageUrl" in updates) {
         varUpdates[VAR_BG_IMAGE] = updates.imageUrl;
@@ -248,7 +247,8 @@ const SettingsDialog = () => {
     }
   };
 
-  const handleToggleDisabled = () => persist({ disabled: !disabled });
+  const handleToggleDisabled = () => persist({ disabled: !(csGetVar(VAR_DISABLED) === "1") });
+  const handleToggleLocalDisabled = () => persist({ localDisabled: !(csGetVar(VAR_LOCAL_DISABLED) === "1") });
 
   const handleSelectPreset = (url: string) => persist({ imageUrl: url === PRESET_IMAGES[0] ? undefined : url });
 
@@ -275,7 +275,7 @@ const SettingsDialog = () => {
 
   const handleClearCustom = () => persist({ imageUrl: undefined });
 
-  const isCustom = !!bgImage.trim() && !PRESET_IMAGES.includes(bgImage.trim());
+  const isCustom = !!bgImage && !PRESET_IMAGES.includes(bgImage);
   const isCustomColor = !PRESET_COLORS.some((p) => p.value === bgColor);
 
   return (
@@ -303,17 +303,32 @@ const SettingsDialog = () => {
         <div style={s.sectionTitle}>Status</div>
         <div style={s.toggleRow}>
           <div>
-            <div style={s.label}>Enable Transparent Terminal</div>
+            <div style={s.label}>Disable Transparent Terminal (global)</div>
             <div style={s.hint}>
               {disabled ? "Effect is currently disabled." : "Background image and transparency are active."}
             </div>
           </div>
           <div
-            style={{ ...s.toggleSwitch, ...(disabled ? {} : s.toggleSwitchOn) }}
+            style={{ ...s.toggleSwitch, ...(disabled ? s.toggleSwitchOn : {}) }}
             onClick={handleToggleDisabled}
             title={disabled ? "Click to enable" : "Click to disable"}
           >
-            <div style={{ ...s.toggleThumb, ...(disabled ? {} : s.toggleThumbOn) }} />
+            <div style={{ ...s.toggleThumb, ...(disabled ? s.toggleThumbOn : {}) }} />
+          </div>
+        </div>
+        <div style={s.toggleRow}>
+          <div>
+            <div style={s.label}>Disable Transparent Terminal (local)</div>
+            <div style={s.hint}>
+              {localDisabled ? "Effect is currently disabled." : "Background image and transparency are active."}
+            </div>
+          </div>
+          <div
+            style={{ ...s.toggleSwitch, ...(localDisabled ? s.toggleSwitchOn : {}) }}
+            onClick={handleToggleLocalDisabled}
+            title={localDisabled ? "Click to enable" : "Click to disable"}
+          >
+            <div style={{ ...s.toggleThumb, ...(localDisabled ? s.toggleThumbOn : {}) }} />
           </div>
         </div>
       </div>
