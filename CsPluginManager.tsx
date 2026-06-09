@@ -98,9 +98,10 @@ const PluginManagerApplet = () => {
         payloadContent = await res.text();
       }
 
+      __CS_MODULECACHE__[plugin.id]?.default?.unload?.();
       delete __CS_MODULECACHE__[plugin.id];
       const existing = csGetAll().buttons.find((b: any) => b.id === plugin.id);
-      await csUpdateButton({
+      const button: ButtonData = {
         id: plugin.id,
         type: plugin.type,
         payload: payloadContent,
@@ -109,10 +110,13 @@ const PluginManagerApplet = () => {
         autorun: existing ? existing.autorun : plugin.autorun || 0,
         order: existing ? existing.order : plugin.order || 0,
         shortcut: existing ? existing.shortcut : plugin.shortcut || "",
-      });
-
+      };
+      await csUpdateButton(button);
       csNotify(`Plugin "${plugin.name}" installed successfully!`, "success");
       refreshInstalled();
+      if (plugin.autorun) {
+        await csRunScript({ button, background: true });
+      }
     } catch (e: any) {
       console.error(`Failed to install plugin ${plugin.name}:`, e);
       csNotify(`Failed to install plugin: ${e.message || e}`, "error");
@@ -262,10 +266,10 @@ const PluginManagerApplet = () => {
                             <button
                               style={styles.btnOpen}
                               onClick={() => {
-                                const btn = csGetAll().buttons.find((btn) => btn.id === plugin.id);
-                                if (btn) {
+                                const button = csGetAll().buttons.find((btn) => btn.id === plugin.id);
+                                if (button) {
                                   csCloseApplet(PLUGIN_NAME);
-                                  csRunScript(btn);
+                                  csRunScript({ button });
                                 }
                               }}
                             >

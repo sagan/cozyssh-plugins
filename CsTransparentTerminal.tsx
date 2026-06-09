@@ -165,8 +165,10 @@ async function saveAcss(cssText: string | null) {
 /**
  * Core apply function – idempotent, can be called as many times as needed.
  */
-async function applyEffect() {
-  const enabled = isEnabled();
+async function applyEffect(enabled?: boolean) {
+  if (enabled === undefined) {
+    enabled = isEnabled();
+  }
   const imageUrl = getBackgroundImage();
   const bgColor = getBgColor();
 
@@ -202,7 +204,8 @@ const SettingsDialog = () => {
 
   // Reload state when vars change
   const reloadState = useCallback(() => {
-    setDisabled(!isEnabled());
+    setDisabled(csGetVar(VAR_DISABLED) === "1");
+    setLocalDisabled(csGetVar(VAR_LOCAL_DISABLED) === "1");
     setBgImage(csGetVar(VAR_BG_IMAGE) ?? "");
     setBgColor(getBgColor());
   }, []);
@@ -797,27 +800,35 @@ export default {
   noFocus: true,
   cache: true,
 
-  async run(selfBtn) {
+  async unload() {
+    applyEffect(false);
+  },
+  async run({ button, background }) {
     // Apply effect if enabled (idempotent, safe to call on every run)
     await applyEffect();
 
+    if (background) {
+      return;
+    }
+
     // Open menu anchored to the button
-    const anchorId = `button-${selfBtn.id}`;
+    const anchor = document.getElementById(`button-${button.id}`) || document.getElementById("buttons");
+    if (!anchor) {
+      return;
+    }
     const enabled = isEnabled();
 
     const MENU_TOGGLE = enabled ? "🚫 Disable Transparent Terminal" : "✅ Enable Transparent Terminal";
     const MENU_SETTINGS = "⚙ Settings…";
 
-    const choice = await csOpenMenu(anchorId, [MENU_TOGGLE, MENU_SETTINGS]);
+    const choice = await csOpenMenu(anchor, [MENU_TOGGLE, MENU_SETTINGS]);
 
     if (choice === MENU_TOGGLE) {
-      await csSetVar(VAR_DISABLED, enabled ? "1" : undefined);
-      await applyEffect();
-      csNotify(
-        enabled ? "Transparent Terminal disabled." : "Transparent Terminal enabled.",
-        "info",
-        "transparent-terminal-toggle",
+      await csSetVar(
+        enabled ? { [VAR_LOCAL_DISABLED]: "1" } : { [VAR_DISABLED]: undefined, [VAR_LOCAL_DISABLED]: undefined },
       );
+      await applyEffect();
+      csFocus();
     } else if (choice === MENU_SETTINGS) {
       if (csGetApplet(APPLET_NAME)) {
         csCloseApplet(APPLET_NAME);
