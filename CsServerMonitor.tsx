@@ -27,9 +27,9 @@ interface CpuStat {
 }
 
 interface MemStat {
-  total: number;  // MiB
-  used: number;   // MiB
-  free: number;   // MiB
+  total: number; // MiB
+  used: number; // MiB
+  free: number; // MiB
   bufcache: number; // MiB
   available: number; // MiB
 }
@@ -50,7 +50,7 @@ interface NetEntry {
 }
 
 interface Stats {
-  cpu: number | null;        // 0-100
+  cpu: number | null; // 0-100
   mem: MemStat | null;
   disks: DiskEntry[];
   load: [number, number, number] | null; // 1m 5m 15m
@@ -64,21 +64,31 @@ interface Stats {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const fmtBytes = (n: number): string => {
-  if (n >= 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} GiB`;
-  if (n >= 1024) return `${(n / 1024).toFixed(1)} MiB`;
+  if (n >= 1024 * 1024) {
+    return `${(n / 1024 / 1024).toFixed(1)} GiB`;
+  }
+  if (n >= 1024) {
+    return `${(n / 1024).toFixed(1)} MiB`;
+  }
   return `${n} KiB`;
 };
 
 const pctColor = (pct: number): string => {
-  if (pct >= 90) return "#ff4d4d";
-  if (pct >= 70) return "#ffaa00";
+  if (pct >= 90) {
+    return "#ff4d4d";
+  }
+  if (pct >= 70) {
+    return "#ffaa00";
+  }
   return "#4ade80";
 };
 
 // Parse /proc/stat cpu line
 function parseCpuLine(line: string): CpuStat | null {
   const parts = line.trim().split(/\s+/);
-  if (parts.length < 8) return null;
+  if (parts.length < 8) {
+    return null;
+  }
   return {
     user: parseInt(parts[1]),
     nice: parseInt(parts[2]),
@@ -91,11 +101,19 @@ function parseCpuLine(line: string): CpuStat | null {
 }
 
 function cpuPct(a: CpuStat, b: CpuStat): number {
-  const idleDelta = (b.idle + b.iowait) - (a.idle + a.iowait);
+  const idleDelta = b.idle + b.iowait - (a.idle + a.iowait);
   const totalDelta =
-    (b.user + b.nice + b.system + b.idle + b.iowait + b.irq + b.softirq) -
+    b.user +
+    b.nice +
+    b.system +
+    b.idle +
+    b.iowait +
+    b.irq +
+    b.softirq -
     (a.user + a.nice + a.system + a.idle + a.iowait + a.irq + a.softirq);
-  if (totalDelta <= 0) return 0;
+  if (totalDelta <= 0) {
+    return 0;
+  }
   return Math.round((1 - idleDelta / totalDelta) * 100);
 }
 
@@ -160,7 +178,9 @@ function parseStats(raw: string, prevCpu: CpuStat | null): { stats: Partial<Stat
       .filter(Boolean)
       .map((line) => {
         const p = line.trim().split(/\s+/);
-        if (p.length < 6) return null;
+        if (p.length < 6) {
+          return null;
+        }
         return {
           fs: p[0],
           size: p[1],
@@ -198,7 +218,9 @@ function parseStats(raw: string, prevCpu: CpuStat | null): { stats: Partial<Stat
       .filter(Boolean)
       .map((line) => {
         const [ifacePart, ...rest] = line.trim().split(":");
-        if (!rest.length) return null;
+        if (!rest.length) {
+          return null;
+        }
         const nums = rest[0].trim().split(/\s+/);
         return {
           iface: ifacePart.trim(),
@@ -309,7 +331,9 @@ const ServerMonitor = () => {
   const prevCpuRef = useRef<CpuStat | null>(null);
 
   const fetchStats = useCallback(async () => {
-    if (loading) return;
+    if (loading) {
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -326,15 +350,19 @@ const ServerMonitor = () => {
         const now = Date.now();
         const elapsed = (now - prevNetTimeRef.current) / 1000;
         if (elapsed > 0) {
-          const deltas = parsed.net.map((n) => {
-            const prev = prevNetRef.current!.find((p) => p.iface === n.iface);
-            if (!prev) return null;
-            return {
-              iface: n.iface,
-              rx: Math.max(0, n.rxBytes - prev.rxBytes) / elapsed,
-              tx: Math.max(0, n.txBytes - prev.txBytes) / elapsed,
-            };
-          }).filter(Boolean) as { iface: string; rx: number; tx: number }[];
+          const deltas = parsed.net
+            .map((n) => {
+              const prev = prevNetRef.current!.find((p) => p.iface === n.iface);
+              if (!prev) {
+                return null;
+              }
+              return {
+                iface: n.iface,
+                rx: Math.max(0, n.rxBytes - prev.rxBytes) / elapsed,
+                tx: Math.max(0, n.txBytes - prev.txBytes) / elapsed,
+              };
+            })
+            .filter(Boolean) as { iface: string; rx: number; tx: number }[];
           setNetDelta(deltas);
         }
         prevNetTimeRef.current = now;
@@ -344,7 +372,7 @@ const ServerMonitor = () => {
       prevNetRef.current = parsed.net ?? null;
       prevCpuRef.current = cpu;
 
-      setStats((prev) => ({ ...prev, ...parsed } as Stats));
+      setStats((prev) => ({ ...prev, ...parsed }) as Stats);
     } catch (e) {
       setError(String(e));
     } finally {
@@ -354,11 +382,18 @@ const ServerMonitor = () => {
 
   // Polling loop
   useEffect(() => {
-    if (paused) return;
+    if (paused) {
+      return;
+    }
     fetchStats();
     const id = setInterval(fetchStats, interval * 1000);
     return () => clearInterval(id);
   }, [interval, paused]);
+
+  useEffect(() => {
+    window.addEventListener("cs:terminal-change", fetchStats);
+    return () => window.removeEventListener("cs:terminal-change", fetchStats);
+  }, []);
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -424,31 +459,17 @@ const ServerMonitor = () => {
             <div style={{ fontWeight: 700, fontSize: "0.88rem", lineHeight: 1.2 }}>
               {stats?.hostname ?? APPLET_NAME}
             </div>
-            {stats?.os && (
-              <div style={{ fontSize: "0.68rem", color: "#555", marginTop: 1 }}>{stats.os}</div>
-            )}
+            {stats?.os && <div style={{ fontSize: "0.68rem", color: "#555", marginTop: 1 }}>{stats.os}</div>}
           </div>
         </div>
         <div style={{ display: "flex", gap: 4 }}>
-          <button
-            style={{ ...iconBtn, color: loading ? "#4ade80" : "#666" }}
-            onClick={fetchStats}
-            title="Refresh now"
-          >
+          <button style={{ ...iconBtn, color: loading ? "#4ade80" : "#666" }} onClick={fetchStats} title="Refresh now">
             {loading ? "⟳" : "↺"}
           </button>
-          <button
-            style={iconBtn}
-            onClick={() => setPaused((p) => !p)}
-            title={paused ? "Resume" : "Pause"}
-          >
+          <button style={iconBtn} onClick={() => setPaused((p) => !p)} title={paused ? "Resume" : "Pause"}>
             {paused ? "▶" : "⏸"}
           </button>
-          <button
-            style={iconBtn}
-            onClick={() => csCloseApplet(APPLET_NAME)}
-            title="Close"
-          >
+          <button style={iconBtn} onClick={() => csCloseApplet(APPLET_NAME)} title="Close">
             ✕
           </button>
         </div>
@@ -504,11 +525,7 @@ const ServerMonitor = () => {
             {/* ── Memory ── */}
             {mem && (
               <Card title="Memory">
-                <Gauge
-                  pct={memPct ?? 0}
-                  label="Used"
-                  value={`${mem.total - mem.available} / ${mem.total} MiB`}
-                />
+                <Gauge pct={memPct ?? 0} label="Used" value={`${mem.total - mem.available} / ${mem.total} MiB`} />
                 <div
                   style={{
                     display: "grid",
@@ -529,12 +546,7 @@ const ServerMonitor = () => {
             {stats.disks.length > 0 && (
               <Card title="Disk">
                 {stats.disks.map((d) => (
-                  <Gauge
-                    key={d.mount}
-                    pct={d.pct}
-                    label={`${d.mount} (${d.fs})`}
-                    value={`${d.used} / ${d.size}`}
-                  />
+                  <Gauge key={d.mount} pct={d.pct} label={`${d.mount} (${d.fs})`} value={`${d.used} / ${d.size}`} />
                 ))}
               </Card>
             )}
@@ -583,11 +595,7 @@ const ServerMonitor = () => {
             {s}s
           </button>
         ))}
-        {stats && (
-          <span style={{ marginLeft: "auto" }}>
-            {new Date(stats.ts).toLocaleTimeString()}
-          </span>
-        )}
+        {stats && <span style={{ marginLeft: "auto" }}>{new Date(stats.ts).toLocaleTimeString()}</span>}
       </div>
     </div>
   );

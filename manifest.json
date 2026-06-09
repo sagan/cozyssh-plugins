@@ -79,6 +79,19 @@
       "filename": "CsServerMonitor.tsx",
       "description": "Monitor Linux server CPU, memory, disk and network in a sidebar applet",
       "version": "1.0.0"
+    },
+    {
+      "id": "cs-transparent-terminal",
+      "name": "TransparentTerminal",
+      "type": "run_script",
+      "autorun": 1,
+      "order": 10,
+      "group": "_Sys",
+      "shortcut": "",
+      "author": "sagan",
+      "filename": "CsTransparentTerminal.tsx",
+      "description": "Makes the xterm.js terminal window transparent with a configurable background image",
+      "version": "1.0.0"
     }
   ]
 }
