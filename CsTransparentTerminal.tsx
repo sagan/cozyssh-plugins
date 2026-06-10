@@ -91,7 +91,7 @@ function buildCss(imageUrl: string, bgColor: string): string {
     return "";
   }
   return `
-.terminal-pane {
+#terminals {
   background-image: url(${JSON.stringify(imageUrl)});
   background-size: cover;
   background-position: center;

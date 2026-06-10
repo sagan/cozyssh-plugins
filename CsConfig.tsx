@@ -42,6 +42,13 @@ const NUM_VARS: NumVarRowProps[] = [
     isFloat: true,
   },
   { varKey: "cs_scroll_lines", description: "Terminal scroll speed in lines.", defaultValue: 3, min: 1, max: 100 },
+  {
+    varKey: "cs_scroll_items",
+    description: "Sidebar / New Tab Dialog quick jump speed in items.",
+    defaultValue: 10,
+    min: 1,
+    max: 100,
+  },
 ];
 
 type Scope = "global" | "local";
