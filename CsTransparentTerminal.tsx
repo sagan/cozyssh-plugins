@@ -10,10 +10,11 @@
  * @autorun 1
  *
  * Variables:
- *  - transparent_terminal_disabled        : "1" to disable the effect; unset / "0" means enabled.
+ *  - transparent_terminal_disabled        : "1" to disable the effect globally; unset / "0" means enabled.
+ *  - local_transparent_terminal_disabled  : "1" to disable the effect locally; unset / "0" means enabled.
  *  - transparent_terminal_background_image: URL of the background image (overrides default).
  *  - transparent_terminal_bg_color         : RGBA hex color for the terminal overlay (default "#00000000").
- *  - acss.transparent_terminal            : injected <style> for the terminal pane background.
+ *  - local_acss.transparent_terminal       : Derived variable. Injected <style> for the terminal pane background.
  */
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
@@ -24,9 +25,9 @@ const VAR_DISABLED = "transparent_terminal_disabled";
 const VAR_LOCAL_DISABLED = "local_transparent_terminal_disabled";
 const VAR_BG_IMAGE = "transparent_terminal_background_image";
 const VAR_BG_COLOR = "transparent_terminal_bg_color";
-const VAR_ACSS = "acss";
+const VAR_ACSS = "local_acss";
 const ACSS_KEY = "transparent_terminal";
-const STYLE_TAG_ID = "cozy_css_" + ACSS_KEY;
+const STYLE_TAG_ID = "cozy_local_css_" + ACSS_KEY;
 
 /** Default overlay color — fully transparent so only the background image shows. */
 const DEFAULT_BG_COLOR = "#00000000";
@@ -91,11 +92,18 @@ function buildCss(imageUrl: string, bgColor: string): string {
     return "";
   }
   return `
-#terminals {
+#terminals{
   background-image: url(${JSON.stringify(imageUrl)});
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+}
+/**
+ * Fix padding top and background origin when there are no terminals.
+ */
+#terminals:not(:has(.terminal)) {
+  padding-top: 40px;
+  background-origin: content-box;
 }
 `.trim();
 }
@@ -155,8 +163,14 @@ async function saveAcss(cssText: string | null) {
     }
   }
   if (cssText === null) {
+    if (!acss[ACSS_KEY]) {
+      return;
+    }
     delete acss[ACSS_KEY];
   } else {
+    if (acss[ACSS_KEY] === cssText) {
+      return;
+    }
     acss[ACSS_KEY] = cssText;
   }
   await csSetVar(VAR_ACSS, Object.keys(acss).length > 0 ? JSON.stringify(acss) : undefined);
@@ -824,9 +838,15 @@ export default {
     const choice = await csOpenMenu(anchor, [MENU_TOGGLE, MENU_SETTINGS]);
 
     if (choice === MENU_TOGGLE) {
-      await csSetVar(
-        enabled ? { [VAR_LOCAL_DISABLED]: "1" } : { [VAR_DISABLED]: undefined, [VAR_LOCAL_DISABLED]: undefined },
-      );
+      if (enabled) {
+        await csSetVar({ [VAR_LOCAL_DISABLED]: "1" });
+      } else {
+        if (csGetVar(VAR_DISABLED) === undefined) {
+          await csSetVar({ [VAR_LOCAL_DISABLED]: undefined });
+        } else {
+          await csSetVar({ [VAR_DISABLED]: undefined, [VAR_LOCAL_DISABLED]: undefined });
+        }
+      }
       await applyEffect();
       csFocus();
     } else if (choice === MENU_SETTINGS) {
