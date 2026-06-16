@@ -119,7 +119,6 @@ const CmdHistoryApplet = () => {
                     fontFamily: '"JetBrains Mono", "Fira Code", monospace',
                     fontSize: "0.85rem",
                     fontWeight: "600",
-                    wordBreak: "break-all",
                     color: "#1a202c",
                   }}
                 >

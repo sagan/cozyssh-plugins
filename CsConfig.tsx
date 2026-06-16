@@ -41,6 +41,13 @@ const NUM_VARS: NumVarRowProps[] = [
     max: 100,
     isFloat: true,
   },
+  {
+    varKey: "cs_font_size",
+    description: "Global font size",
+    defaultValue: 14,
+    min: 10,
+    max: 40,
+  },
   { varKey: "cs_scroll_lines", description: "Terminal scroll speed in lines.", defaultValue: 3, min: 1, max: 100 },
   {
     varKey: "cs_scroll_items",

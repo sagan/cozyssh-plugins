@@ -124,6 +124,7 @@ function applyTerminalOptions(enabled: boolean, bgColor: string) {
     // Restore xterm.js defaults: reassign the whole object so the Proxy setter fires
     // and pushes the reset to every open terminal.
     __CS_TERMINAL_OPTIONS__ = {
+      fontSize: __CS_TERMINAL_OPTIONS__.fontSize,
       allowTransparency: false,
     };
   }
