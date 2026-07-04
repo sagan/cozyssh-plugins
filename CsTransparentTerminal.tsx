@@ -277,7 +277,9 @@ const SettingsDialog = () => {
 
   const handleSetCustomColor = () => {
     const raw = customColor.trim();
-    if (!raw) return;
+    if (!raw) {
+      return;
+    }
     // Normalise: prepend # if missing
     const color = raw.startsWith("#") ? raw : "#" + raw;
     persist({ bgColor: color });
@@ -286,7 +288,9 @@ const SettingsDialog = () => {
 
   const handleSetCustom = () => {
     const url = customUrl.trim();
-    if (!url) return;
+    if (!url) {
+      return;
+    }
     persist({ imageUrl: url });
     setCustomUrl("");
   };

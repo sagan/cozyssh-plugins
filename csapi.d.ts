@@ -1680,26 +1680,41 @@ export interface IModes {
 	 */
 	readonly wraparoundMode: boolean;
 }
+export interface Sysinfo {
+	username?: string;
+	sitename?: string;
+	version?: string;
+	insecureAllowed?: boolean;
+	isSecure?: boolean;
+	savePassword?: "ask" | "always" | "never";
+	configDir?: string;
+	sshDir?: string;
+}
 export interface HostData {
 	name: string;
 	hostname: string;
 	port: string;
 	user: string;
-	proxy_jump?: string;
-	remote_command?: string;
+	proxyJump?: string;
+	remoteCommand?: string;
 	tags?: string[];
 	comment?: string;
 	source?: "config" | "known_hosts" | "";
-	identity_file?: string;
-	is_auto?: boolean;
-	is_favourite?: boolean;
-	address_family?: "any" | "inet" | "inet6" | "";
-	user_known_hosts_file?: string;
-	strict_host_key_checking?: "yes" | "no" | "ask" | "";
-	host_key_algorithms?: string;
+	identityFile?: string;
+	isAuto?: boolean;
+	isFavourite?: boolean;
+	addressFamily?: "any" | "inet" | "inet6" | "";
+	userKnownHostsFile?: string;
+	strictHostKeyChecking?: "yes" | "no" | "ask" | "";
+	hostKeyAlgorithms?: string;
+	verifyHostKeyDns?: "yes" | "no" | "ask" | "";
+	sendEnv?: string;
+	localForward?: string;
+	remoteForward?: string;
+	dynamicForward?: string;
 	password?: string;
-	password_exists?: boolean;
-	clear_password?: boolean;
+	passwordExists?: boolean;
+	clearPassword?: boolean;
 }
 export interface ButtonData {
 	id: string;
@@ -1712,6 +1727,14 @@ export interface ButtonData {
 	shortcut: string;
 	liquidjs?: number;
 	mtime?: number;
+}
+export interface Session {
+	id: string;
+	host: string;
+	title: string;
+	isPinned: boolean;
+	isLocked: boolean;
+	listenerCount: number;
 }
 export interface Recent {
 	host: string;
@@ -1729,7 +1752,14 @@ export interface WsTerminalMessage {
 	isPinned: boolean;
 	isLocked: boolean;
 }
-export type ViewMode = "servers" | "tabs" | "buttons";
+export interface ActiveTunnel {
+	type: "local" | "remote" | "dynamic";
+	bindAddr: string;
+	bindPort: string;
+	remoteHost?: string;
+	remotePort?: string;
+	hostName: string;
+}
 export type Severity = "success" | "info" | "warning" | "error";
 export type ToastData = {
 	msg: string;
@@ -1825,6 +1855,8 @@ export type CSEventDetailTerminalData = {
 	terminal: Terminal;
 	sessionId: string;
 	host: string;
+	data: string | Uint8Array;
+	filters: ((data: string | Uint8Array) => string | Uint8Array)[];
 	is_active_terminal: boolean;
 };
 export type CSEventDetailShellIntegration = {
@@ -1921,6 +1953,7 @@ export interface TerminalHandle {
 	findPrevious: (term: string, searchOptions?: ISearchOptions) => boolean;
 	clearSearchDecorations: () => void;
 	clearSearchActiveDecoration: () => void;
+	fit: () => void;
 	getLastCommandOutput: () => string;
 	getXterm: () => Terminal | null;
 	/** Set the inputMode on the hidden xterm textarea (e.g. 'none' to suppress system keyboard) */
@@ -1953,10 +1986,11 @@ export interface TabData {
 	isPinned?: boolean;
 	isLocked?: boolean;
 	showFiles?: boolean;
-	type?: "terminal" | "scratchpad";
+	type: "terminal" | "scratchpad";
 }
 export type TerminalRefMap = Record<string, TerminalHandle | ScratchpadHandle | null>;
 export interface Store {
+	asyncDialogOpen: boolean;
 	sendScope: 0 | 1 | 2;
 	/**
 	 * Terminal Input dialog: Append new line (\n) checkbox
@@ -1985,11 +2019,11 @@ export interface Store {
 	editButtonDialogOpen: boolean;
 	editHostDialogOpen: boolean;
 	inputDialogOpen: boolean;
+	inputDialogDirty: boolean;
 	inputValue: string;
 	inputLiquid: boolean;
 	newTabDialogOpen: boolean;
-	newTabDialogInitialViewMode: ViewMode;
-	sysHostname: string;
+	newTabDialogFilter: string;
 	unreadTabIds: Set<string>;
 	focusTrigger: number;
 	focusSearchInputTrigger: number;
@@ -1997,12 +2031,23 @@ export interface Store {
 	activeTabId: string;
 	activePaneId: string;
 	hosts: HostData[];
+	groups: string[];
 	shells: LocalShell[];
 	buttons: ButtonData[];
+	sysinfo: Sysinfo;
+	tagsExpanded: number;
 	vars: Record<string, string>;
 	/** Local (browser-only) vars. All names have a "local_" (case-insensitive) prefix. */
 	localVars: Record<string, string>;
+	recentButtonIds: string[];
 	shellIntegrations: Record<string, ShellIntegration>;
+	activeTunnels: ActiveTunnel[];
+}
+/**
+ * The module type of custom script
+ */
+export interface CsScriptModule {
+	default?: CsScript;
 }
 declare const useStore: import("zustand").UseBoundStore<import("zustand").StoreApi<Store>>;
 export type UseStore = typeof useStore;
@@ -2016,12 +2061,6 @@ export interface AppletData {
 	zIndex?: number;
 	fullScreen?: boolean;
 }
-/**
- * The module type of custom script
- */
-export interface CsScriptModule {
-	default?: CsScript;
-}
 export interface CsExecResult {
 	error: unknown;
 	stdout: string;
@@ -2029,7 +2068,7 @@ export interface CsExecResult {
 }
 declare global {
 	interface CsChooseAction {
-		id: string; // The unique value returned when clicked (e.g., 'discard')
+		value: string; // The unique value returned when clicked (e.g., 'discard')
 		label?: string; // The text displayed on the button (e.g., 'Save as Draft'), default to id
 		variant?: "primary" | "secondary" | "error" | "warning"; // Optional styling hint
 	}
@@ -2085,17 +2124,24 @@ declare global {
 	 */
 	var __CS_USE_STORE__: UseStore;
 	/**
-	 * The list of key combinations that should be passed through to the terminal if terminal has focus.
+	 * The additional list of key combinations that should be passed through to the terminal if terminal has focus.
 	 * Each element is a key combination string such as `ctrl+shift+m`
 	 * (all lowercase, modifiers in `ctrl,alt,shift,meta` order).
-	 * Some key combinations (like `ctrl+c`, `ctrl+d`, etc.) are pre-added to this set by default.
 	 */
 	var __CS_PASSTHROUGH_SHORTCUTS__: Set<string>;
 	/**
 	 * The list of CozySSH shortcut key combinations that should be disabled.
 	 * The element is in the same format as `__CS_PASSTHROUGH_SHORTCUTS__` element.
+	 * For shortcut in this list it will directly return in keyboard event handle.
 	 */
 	var __CS_DISABLE_SHORTCUTS__: Set<string>;
+	/**
+	 * The list of shortcut key combinations that are silently "consumed" by CozySSH.
+	 * The difference between it and `__CS_DISABLE_SHORTCUTS__` is that for shortcut in this list
+	 * it will execute `e.preventDefault()` before returning in keyboard event handle.
+	 * Some key combinations (like `alt`, `alt+shift`, etc.) are pre-added to this set by default.
+	 */
+	var __CS_BLACKHOLE_SHORTCUTS__: Set<string>;
 	/**
 	 * If 1, disable terminal ctrl+l (let browser handle it) and remap ctrl+shift+l & ctrl+alt+l to ctrl+l in terminal.
 	 */
@@ -2127,6 +2173,15 @@ declare global {
 	 * It uses Object.defineProperty so the modification takes effect immediately.
 	 */
 	var __CS_FONT_SIZE__: number;
+	/**
+	 * Global shortcut button map.
+	 */
+	var __CS_SHORTCUT_BUTTONS__: Record<string, ButtonData>;
+	/**
+	 * Toast keys that are muted. Keys can be prefixes ending with '-'.
+	 * For example, 'A-' matches 'A-1', 'A-2', etc.
+	 */
+	var __CS_TOAST_KEY_MUTE_SET__: Set<string>;
 	/**
 	 * Focus the terminal with the given pane id.
 	 * @param tabOrPaneId defaults to active terminal pane id.
@@ -2219,6 +2274,11 @@ declare global {
 		localVars: Record<string, string | undefined>;
 	};
 	/**
+	 * Get all sessions.
+	 * @param pinnedOnly Whether to only get sessions whose `isPinned` or `isLocked` property is true.
+	 */
+	function csGetSessions(pinnedOnly?: boolean): Promise<Session[]>;
+	/**
 	 * Performs an HTTP request via the CozySSH backend proxy to bypass browser CORS restrictions.
 	 * @param init the fetch `RequestInit` object, with an additional optional `key` property.
 	 * @param init.key Optional key to uniquify the request. If not provided, it will be generated to a random value.
@@ -2258,7 +2318,7 @@ declare global {
 	/**
 	 * Update a host.
 	 */
-	function csUpdateHost(btn: HostData): Promise<void>;
+	function csUpdateHost(host: HostData | HostData[]): Promise<void>;
 	/**
 	 * Delete a host.
 	 */
@@ -2352,9 +2412,12 @@ declare global {
 	/**
 	 * Display an async prompt dialog.
 	 * The behavior is the same as `window.prompt` except it's non-blocking.
+	 * @param options.options Set to render text input as a select dropdown that
+	 * the user can only choose from the list of pre-defied values.
 	 */
 	function csPrompt(message?: string, defaultValue?: string, options?: {
 		placeholder?: string;
+		options?: (string | CsChooseAction)[];
 		validate?: (value: string) => string | undefined;
 	}): Promise<string | null>;
 	/**
@@ -2386,6 +2449,10 @@ declare global {
 	 * Get auth token (only valid for desktop app).
 	 */
 	var appAuth: (() => Promise<string>) | undefined;
+	/**
+	 * Open url in system default browser (only valid for desktop app).
+	 */
+	var appOpenUrl: ((url: string) => Promise<void>) | undefined;
 }
 
 export {};

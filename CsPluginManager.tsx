@@ -74,7 +74,9 @@ const PluginManagerApplet = () => {
   // Filter plugins by name, ID, or description
   const filteredPlugins = plugins.filter((plugin) => {
     const query = searchQuery.toLowerCase().trim();
-    if (!query) return true;
+    if (!query) {
+      return true;
+    }
     return (
       plugin.name.toLowerCase().includes(query) ||
       plugin.id.toLowerCase().includes(query) ||
